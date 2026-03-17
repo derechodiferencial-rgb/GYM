@@ -1,1 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pizarra Fitness Panchita</title>
+    <!-- Cargamos todo con CDNs confiables -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,600;0,700;0,800;1,800&display=swap');
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background-color: #FFF9F9; 
+            margin: 0; 
+            padding: 0;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .rounded-card { border-radius: 2.5rem; }
+        .animate-in { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Sombras suaves como el video original */
+        .soft-shadow { box-shadow: 0 10px 30px -5px rgba(155, 27, 48, 0.1); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
 
+    <script type="text/babel">
+        const { useState } = React;
+
+        // Iconos en SVG para que no fallen nunca
+        const Icons = {
+            Home: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+            Calendar: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
+            ArrowLeft: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
+            Sun: () => <svg width="40" height="40" viewBox="0 0 24 24" fill="#facc15" stroke="#eab308" strokeWidth="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>,
+            Shield: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+            Chevron: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="m9 18 6-6-6-6"/></svg>,
+            Star: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('inicio');
+            const [selectedDay, setSelectedDay] = useState(null);
+
+            const colors = { primary: '#9B1B30', accent: '#FF0055' };
+
+            const schedule = [
+                { id: 'lunes', name: 'LUNES', title: 'Descanso Activo', subtitle: 'DÍA PESADO UCN', icon: "📚", type: 'rest', content: 'Día largo de Educación Diferencial. Prioriza el descanso mental después de tanta materia. ¡Paseo relax con Khoda al llegar!' },
+                { id: 'martes', name: 'MARTES', title: 'Glúteo Burbuja', subtitle: 'TARDE LIBRE POST-PRÁCTICA', icon: "🍑", type: 'workout' },
+                { id: 'miercoles', name: 'MIERCOLES', title: 'Torso & Postura', subtitle: 'CARGA MEDIA UCN', icon: "🦢", type: 'workout' },
+                { id: 'jueves', name: 'JUEVES', title: 'Descanso Activo', subtitle: 'DÍA FULL CLASES', icon: "📓", type: 'rest', content: 'Día intenso en Guayacán. No te preocupes por el gym hoy. ¡Misión Junior y a dormir temprano!' },
+                { id: 'viernes', name: 'VIERNES', title: 'Circuito Quema-Azúcar', subtitle: 'TARDE LIBRE', icon: "⚡", type: 'circuit' },
+                { id: 'sabado', name: 'SABADO', title: 'Detalle & Cadera', subtitle: 'FIN DE SEMANA', icon: "💄", type: 'workout' },
+                { id: 'domingo', name: 'DOMINGO', title: 'Paseo & Junior', subtitle: '', icon: "🐾", type: 'rest' }
+            ];
+
+            const exercises = {
+                martes: {
+                    title: 'GLÚTEO BURBUJA',
+                    items: [
+                        { name: 'Hip Thrust', sets: '4 x 15-20', note: 'Máquina específica. Empuja con talones y aguanta 2 segundos arriba apretando fuerte.', tip: 'Tus pies tienden a meterse, ¡mantenlos firmes!', rest: '90S' },
+                        { name: 'Prensa 45°', sets: '3 x 15-20', note: 'Pies altos y anchos. Esta variante enfoca el glúteo sin ensanchar los muslos.', tip: 'Rodillas siempre hacia afuera.', rest: '60S' },
+                        { name: 'Extensión de Cuádriceps', sets: '3 x 15', note: 'REEMPLAZO POR SEGURIDAD. Al estar sentada, eliminas el riesgo de perder el equilibrio de los rieles.', tip: 'Controla la bajada del peso.', rest: '60S' },
+                        { name: 'Curl Femoral', sets: '3 x 20', note: 'Sentada en máquina. Mantén la cola bien pegada al asiento al bajar el peso.', tip: 'Movimiento lento y controlado.', rest: '60S' }
+                    ],
+                    cardio: { time: '20 min', speed: '4.8 - 5.0 km/h', incline: '10%' }
+                },
+                miercoles: {
+                    title: 'TORSO & POSTURA',
+                    items: [
+                        { name: 'Jalón al Pecho', sets: '3 x 15-20', note: 'Agarre amplio para cintura fina. Lleva la barra al pecho alto.', tip: 'Saca pecho al bajar.', rest: '60S' },
+                        { name: 'Remo en Máquina', sets: '3 x 15-20', note: 'Mejora la postura post-estudio. Junta las escápulas atrás.', tip: 'No encojas los hombros.', rest: '60S' },
+                        { name: 'Press de Hombro', sets: '3 x 15', note: 'Máquina sentada. Protege tus articulaciones y tonifica hombros.', tip: 'No estires brazos del todo arriba.', rest: '60S' },
+                        { name: 'Vuelos Laterales', sets: '3 x 20', note: 'En polea baja para tensión constante. Sube hasta el hombro.', tip: 'Baja el peso muy lento.', rest: '45S' }
+                    ],
+                    cardio: { time: '20 min', speed: '5.0 km/h', incline: '3%' }
+                },
+                viernes: {
+                    title: 'QUEMA-AZÚCAR',
+                    items: [
+                        { name: 'Prensa 45°', sets: '20 reps', note: 'Pies altos. Ritmo fluido para activar el metabolismo.', rest: 'SIGUE' },
+                        { name: 'Remo Máquina', sets: '20 reps', note: 'Controla el regreso del peso.', rest: 'SIGUE' },
+                        { name: 'Press Pecho', sets: '20 reps', note: 'Tonificación suave de brazos.', rest: '90S' }
+                    ],
+                    cardio: { time: '20 min', speed: '5.0 km/h', incline: '4%' }
+                },
+                sabado: {
+                    title: 'DETALLE & CADERA',
+                    items: [
+                        { name: 'Abductores', sets: '4 x 25', note: 'Inclínate hacia adelante para rellenar los "hip dips" y marcar reloj de arena.', tip: 'Abre rápido, cierra lento.', rest: '45S' },
+                        { name: 'Patada de Glúteo', sets: '4 x 15-20/lado', note: 'VARIANTE APOYO 90°. Apóyate en un banco para no perder el equilibrio y enfocarte 100% en el glúteo.', tip: 'Patea hacia atrás y un poco hacia afuera.', rest: '45S' },
+                        { name: 'Prensa Unilateral', sets: '3 x 15/lado', note: 'Una sola pierna. Corrige desbalances y obliga a la rodilla a ir derecha.', tip: 'Pie bien arriba en la placa.', rest: '45S' }
+                    ],
+                    cardio: { time: '20 min', speed: '5.3 km/h', incline: '5%' }
+                }
+            };
+
+            const renderHome = () => (
+                <div className="p-6 space-y-6 animate-in">
+                    <div className="flex justify-between items-center mt-4">
+                        <div>
+                            <h1 className="text-4xl font-black italic tracking-tighter" style={{ color: colors.primary }}>Hola, Panchita!</h1>
+                            <p className="text-[10px] font-bold tracking-[0.2em] mt-1 text-gray-400 uppercase">Educación Diferencial UCN 🐾</p>
+                        </div>
+                        <div className="w-16 h-16 rounded-full flex items-center justify-center border-2 soft-shadow bg-white" style={{ borderColor: colors.primary }}>
+                            <Icons.Sun />
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-card p-6 soft-shadow flex items-center gap-5 border border-red-50">
+                        <div className="bg-[#9B1B30] p-4 rounded-2xl text-white text-2xl">🐾</div>
+                        <div>
+                            <h3 className="font-black text-xs tracking-[0.2em] uppercase" style={{ color: colors.primary }}>MISIÓN JUNIOR</h3>
+                            <p className="text-[11px] text-gray-500 font-semibold leading-tight mt-1">Paseo de 15 min con Khoda post-comida.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <button onClick={() => setActiveTab('rutina')} className="bg-[#9B1B30] rounded-card py-10 soft-shadow flex flex-col items-center justify-center gap-4 active:scale-95 transition-transform">
+                            <span className="text-4xl">🏋️‍♀️</span>
+                            <span className="font-black text-[10px] uppercase tracking-[0.2em] text-white">Mi Rutina</span>
+                        </button>
+                        <div className="bg-white rounded-card py-10 soft-shadow flex flex-col items-center justify-center gap-4 opacity-60">
+                            <span className="text-4xl">⚙️</span>
+                            <span className="font-black text-[10px] uppercase tracking-[0.2em]" style={{ color: colors.primary }}>Variantes</span>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-[2rem] p-8 soft-shadow border border-red-50 relative overflow-hidden">
+                        <div className="absolute left-0 top-0 bottom-0 w-2" style={{ backgroundColor: colors.primary }}></div>
+                        <div className="flex items-center gap-2 mb-3" style={{ color: colors.accent }}>
+                            <Icons.Shield />
+                            <h3 className="font-black text-[10px] uppercase tracking-[0.2em]" style={{ color: colors.primary }}>Protocolo Seguridad</h3>
+                        </div>
+                        <p className="text-[11px] italic text-gray-500 font-bold leading-relaxed">"Técnica sobre peso siempre. Rodilla hacia afuera, pies firmes."</p>
+                    </div>
+                </div>
+            );
+
+            const renderCalendar = () => (
+                <div className="p-6 space-y-4 animate-in">
+                    <div className="flex items-center gap-4 mb-8">
+                        <button onClick={() => setActiveTab('inicio')} className="p-3 bg-white rounded-full soft-shadow" style={{ color: colors.primary }}><Icons.ArrowLeft /></button>
+                        <h2 className="text-2xl font-black italic tracking-tighter" style={{ color: colors.primary }}>Tu Calendario</h2>
+                    </div>
+                    {schedule.map((day) => (
+                        <button key={day.id} onClick={() => day.type !== 'rest' && setSelectedDay(day.id)} className="w-full bg-white rounded-[2rem] p-5 flex items-center justify-between soft-shadow border border-red-50/50">
+                            <div className="flex items-center gap-5">
+                                <div className="bg-red-50/30 p-4 rounded-2xl min-w-[72px] min-h-[72px] flex items-center justify-center text-3xl">{day.icon}</div>
+                                <div className="text-left">
+                                    <p className="text-[10px] font-black tracking-widest text-rose-400 uppercase">{day.name}</p>
+                                    <h3 className="font-black text-lg" style={{ color: colors.primary }}>{day.title}</h3>
+                                    {day.subtitle && <p className="text-[8px] font-bold text-white uppercase mt-1.5 bg-[#9B1B30] px-3 py-0.5 rounded-full inline-block">{day.subtitle}</p>}
+                                </div>
+                            </div>
+                            {day.type !== 'rest' && <div className="text-red-100"><Icons.Chevron /></div>}
+                        </button>
+                    ))}
+                </div>
+            );
+
+            const renderWorkoutDetail = (dayId) => {
+                const data = exercises[dayId];
+                if (!data) return (
+                    <div className="p-6 animate-in text-center">
+                        <button onClick={() => setSelectedDay(null)} className="flex items-center gap-2 mb-8 font-black uppercase text-[10px] tracking-[0.3em]" style={{ color: colors.accent }}><Icons.ArrowLeft /> Volver</button>
+                        <h1 className="text-5xl font-black italic tracking-tighter mb-4" style={{ color: colors.primary }}>Descanso</h1>
+                        <div className="bg-white rounded-card p-12 soft-shadow border border-red-50 flex flex-col items-center gap-8">
+                            <span className="text-6xl">😴</span>
+                            <p className="text-xl text-gray-700 font-bold leading-relaxed">{schedule.find(d => d.id === dayId).content}</p>
+                        </div>
+                    </div>
+                );
+                return (
+                    <div className="p-4 space-y-8 animate-in">
+                        <button onClick={() => setSelectedDay(null)} className="flex items-center gap-2 mb-2 font-black uppercase text-[10px] tracking-[0.3em]" style={{ color: colors.accent }}><Icons.ArrowLeft /> Volver</button>
+                        <h1 className="text-5xl font-black italic tracking-tighter text-center" style={{ color: colors.primary }}>{data.title}</h1>
+                        <div className="space-y-6">
+                            {data.items.map((ex, idx) => (
+                                <div key={idx} className="bg-white rounded-card p-8 soft-shadow border border-red-50 space-y-5">
+                                    <div className="flex justify-between items-start">
+                                        <div className="space-y-1">
+                                            <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Variante Seleccionada</p>
+                                            <h3 className="text-2xl font-black" style={{ color: colors.primary }}>{ex.name}</h3>
+                                        </div>
+                                        <div className="bg-[#9B1B30] px-4 py-2 rounded-xl text-white font-black italic shadow-md">{ex.sets}</div>
+                                    </div>
+                                    <div className="bg-red-50/40 p-5 rounded-3xl text-[11px] font-bold text-gray-600 leading-relaxed border border-red-100/50">
+                                        <span className="font-black text-[#9B1B30] uppercase text-[9px] block mb-1">Nota del Coach:</span>{ex.note}
+                                    </div>
+                                    <div className="flex items-center gap-2 pt-4 border-t border-gray-50 text-[10px] font-black text-gray-300">
+                                        <Icons.Star /> Descanso: {ex.rest}
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="bg-[#9B1B30] rounded-[3rem] p-10 text-white shadow-2xl text-center">
+                                <h3 className="text-2xl font-black italic tracking-tight mb-8">CARDIO CAMINADORA</h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-white/10 p-5 rounded-[1.5rem] border border-white/10">
+                                        <p className="text-[10px] font-black opacity-50 uppercase mb-1">Velocidad</p>
+                                        <div className="text-2xl font-black italic">{data.cardio.speed} <small className="text-[9px]">km/h</small></div>
+                                    </div>
+                                    <div className="bg-white/10 p-5 rounded-[1.5rem] border border-white/10">
+                                        <p className="text-[10px] font-black opacity-50 uppercase mb-1">Inclinación</p>
+                                        <div className="text-2xl font-black italic">{data.cardio.incline} <small className="text-[9px]">%</small></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen pb-32">
+                    {selectedDay ? renderWorkoutDetail(selectedDay) : (activeTab === 'inicio' ? renderHome() : renderCalendar())}
+                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-[380px] bg-white/90 backdrop-blur-lg rounded-full soft-shadow flex justify-around p-3 border border-red-50 z-50">
+                        <button onClick={() => { setActiveTab('inicio'); setSelectedDay(null); }} className={`p-4 rounded-full transition-all ${activeTab === 'inicio' ? 'bg-[#9B1B30] text-white' : 'text-gray-300'}`}><Icons.Home /></button>
+                        <button onClick={() => { setActiveTab('rutina'); setSelectedDay(null); }} className={`p-4 rounded-full transition-all ${activeTab === 'rutina' ? 'bg-[#9B1B30] text-white' : 'text-gray-300'}`}><Icons.Calendar /></button>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
